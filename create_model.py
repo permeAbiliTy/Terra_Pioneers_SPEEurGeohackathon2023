@@ -16,6 +16,7 @@ from keras.optimizers import Adam
 from keras import regularizers
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
 from keras.models import Model
+import json
 
 # import cv2
 
@@ -500,31 +501,45 @@ del no_background_ai
 del no_background_bulk_modulus
 del no_background_density
 
+# https://stackoverflow.com/questions/19078170/python-how-would-you-save-a-simple-settings-config-file
+config = {
+          "seismic": [np.mean(resized_seismic, dtype='float64'), np.std(resized_seismic, dtype='float64')],
+          "acoustic_impedance": [np.mean(resized_acoustic_impedance, dtype='float64'), np.std(resized_acoustic_impedance, dtype='float64')],
+          "bulk_modulus": [np.mean(resized_bulk_modulus, dtype='float64'), np.std(resized_bulk_modulus, dtype='float64')],
+          "density": [np.mean(resized_density, dtype='float64'), np.std(resized_density, dtype='float64')],
+          "permeability": [np.mean(resized_permeability, dtype='float64'), np.std(resized_permeability, dtype='float64')],
+          "poissonratio": [np.mean(resized_poissonratio, dtype='float64'), np.std(resized_poissonratio, dtype='float64')],
+          "porosity": [np.mean(resized_porosity, dtype='float64'), np.std(resized_porosity, dtype='float64')]
+}
+
+with open('config.json', 'w') as f:
+    json.dump(config, f)
+
 # scaling factor standardscaler
 print('seismic')
-scaled_seismic = np.float32(resized_seismic - np.mean(resized_seismic)) / np.std(resized_seismic)
+scaled_seismic = np.float32(resized_seismic - config["seismic"][0]) / config["seismic"][1]
 
 print('acoustic impedance')
-scaled_acousticimpedance = (np.float32(resized_acoustic_impedance - np.mean(resized_acoustic_impedance))
-                            / np.std(resized_acoustic_impedance))
+scaled_acousticimpedance = (np.float32(resized_acoustic_impedance - config["acoustic_impedance"][0])
+                            / config["acoustic_impedance"][1])
 
 print('bulk modulus')
-scaled_bulk_modulus = np.float32(resized_bulk_modulus - np.mean(resized_bulk_modulus)) / np.std(resized_bulk_modulus)
+scaled_bulk_modulus = np.float32(resized_bulk_modulus - config["bulk_modulus"][0]) / config["bulk_modulus"][1]
 
 print('density')
-scaled_density = np.float32(resized_density - np.mean(resized_density)) / np.std(resized_density)
+scaled_density = np.float32(resized_density - config["density"][0]) / config["density"][1]
 
 # print('facies')
 # scaled_facies = np.float32(resized_facies - np.mean(resized_facies))/np.std(resized_facies)
 
 print('permeability')
-scaled_permeability = np.float32(resized_permeability - np.mean(resized_permeability)) / np.std(resized_permeability)
+scaled_permeability = np.float32(resized_permeability - config["permeability"][0]) / config["permeability"][1]
 
 print('poisson ratio')
-scaled_poissonratio = np.float32(resized_poissonratio - np.mean(resized_poissonratio)) / np.std(resized_poissonratio)
+scaled_poissonratio = np.float32(resized_poissonratio - config["poissonratio"][0]) / config["poissonratio"][1]
 
 print('porosity')
-scaled_porosity = np.float32(resized_porosity - np.mean(resized_porosity)) / np.std(resized_porosity)
+scaled_porosity = np.float32(resized_porosity - config["porosity"][0]) / config["porosity"][1]
 
 # print('shear impedance')
 # scaled_shear_impedance = np.float32(resized_shear_impedance - np.mean(resized_shear_impedance))
@@ -556,7 +571,7 @@ def regularized_loss(y_true, y_pred):
     mse = MSE(y_true, y_pred)
 
     # Add the L2 regularization
-    for layer in model5.layers:
+    for layer in model.layers:
         if hasattr(layer, 'kernel'):
             mse += l2_regularizer(layer.kernel)
 
@@ -568,7 +583,7 @@ def regularized_loss_masked(y_true, y_pred):
     loss = k.mean(k.square(y_pred * k.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
 
     # Add the L2 regularization
-    for layer in model5.layers:
+    for layer in model.layers:
         if hasattr(layer, 'kernel'):
             loss += l2_regularizer(layer.kernel)
 
@@ -704,14 +719,14 @@ def unet():
                       acousticimpedance,
                       bulkmodulus,
                       density,
-                      #                              facies,
+                      # facies,
                       permeability,
                       poissonratio,
-                      porosity,
-                      #                              shearimpedance,
-                      #                              shearmodulus,
-                      #                              vpvs,
-                      #                              youngmodulus
+                      porosity
+                      # shearimpedance,
+                      # shearmodulus,
+                      # vpvs,
+                      # youngmodulus
                   ])
 
     return model
@@ -720,10 +735,10 @@ def unet():
 num_channels = 1  # Set the number of input channels (RGB images have 3 channels)
 
 # model2 = unet(input_shape, num_channels)
-model5 = unet()
-model5.compile(optimizer=Adam(learning_rate=1e-3), loss=regularized_loss_masked,
-               metrics=['MAE', r_squared, adjusted_r_squared])
-model5.summary()
+model = unet()
+model.compile(optimizer=Adam(learning_rate=1e-3), loss=regularized_loss_masked,
+              metrics=['MAE', r_squared, adjusted_r_squared])
+model.summary()
 
 # Saving our predictions in the directory 'preds'
 # plt.plot(history5.history['loss'][1:])
@@ -734,20 +749,20 @@ model5.summary()
 # plt.legend(['Train', 'Test'], loc='upper left')
 # plt.show()
 
-history5 = model5.fit(scaled_seismic,
-                      [scaled_acousticimpedance,
-                       scaled_bulk_modulus,
-                       scaled_density,
-                       scaled_permeability,
-                       scaled_poissonratio,
-                       scaled_porosity,
-                       # scaled_shear_impedance, scaled_shear_modulus,
-                       # scaled_Vp_Vs, scaled_Youngs_Modulus
-                       ],
-                      batch_size=8, epochs=25,
-                      verbose=1, shuffle=True, validation_split=0.2)
+history = model.fit(scaled_seismic,
+                    [scaled_acousticimpedance,
+                     scaled_bulk_modulus,
+                     scaled_density,
+                     scaled_permeability,
+                     scaled_poissonratio,
+                     scaled_porosity,
+                     # scaled_shear_impedance, scaled_shear_modulus,
+                     # scaled_Vp_Vs, scaled_Youngs_Modulus
+                     ],
+                    batch_size=8, epochs=25,
+                    verbose=1, shuffle=True, validation_split=0.2)
 
-pd.DataFrame.from_dict(history5.history).to_csv(current_dir + r"/dataset_models/history_model_masked.csv", index=False)
+pd.DataFrame.from_dict(history.history).to_csv(current_dir + r"/dataset_models/history_model_masked.csv", index=False)
 
 # saving model
-model5.save(current_dir + r"/dataset_models/model_masked")
+model.save(current_dir + r"/dataset_models/model_masked")
