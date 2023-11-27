@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import pandas as pd
-import numpy as np
 # import matplotlib.pyplot as plt
 import os
-import segyio  # to read seismic
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import segyio  # to read seismic
 # import random
 import tensorflow as tf
-# import cv2
-
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose
-from keras.optimizers import Adam, SGD
-from keras.callbacks import ModelCheckpoint, History
-from keras import backend as k
-from sklearn.model_selection import train_test_split
-from tensorflow.keras import layers, regularizers
-
 from empatches import EMPatches
+from keras import backend as k
+from keras.optimizers import Adam
+from keras import regularizers
+from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
+from keras.models import Model
+
+# import cv2
 
 # colourmap
 # from seiscm import seismic
@@ -625,31 +623,6 @@ def adjusted_r_squared(y_true, y_pred):
     return adjusted_r2
 
 
-class CustomLoss(tf.keras.losses.Loss):
-    def init(self, regularization_factor=0.01, name='custom_loss'):
-        super(CustomLoss, self).init(name=name)
-        self.regularization_factor = regularization_factor
-        self.mse_log_loss = MeanSquaredLogarithmicError()
-
-    def call(self, y_true, y_pred):
-        # Mask for non-zero values
-        mask = tf.cast(tf.not_equal(y_true, 0), dtype=tf.float32)
-
-        # Apply the mask to target values
-        masked_y_true = y_true * mask
-
-        # Calculate the Mean Squared Logarithmic Error for non-zero values
-        mse_log_loss = self.mse_log_loss(masked_y_true, y_pred)
-
-        # Add regularization term (optional)
-        regularization_term = self.regularization_factor * tf.reduce_mean(tf.square(y_pred))
-
-        # Combine the MSE Log Loss and the regularization term
-        total_loss = mse_log_loss + regularization_term
-
-        return total_loss
-
-
 def loss_function_mask(y_true, y_pred):
     loss = k.mean(k.square(y_pred * k.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
     #     loss = K.sqrt(K.sum(K.square(y_pred*K.cast(y_true> tf.reduce_min(y_true), "float32") - y_pred))
@@ -762,77 +735,19 @@ model5.summary()
 # plt.show()
 
 history5 = model5.fit(scaled_seismic,
-                    [scaled_acousticimpedance,
-                     scaled_bulk_modulus,
-                     scaled_density,
-                     scaled_permeability,
-                     scaled_poissonratio,
-                     scaled_porosity,
-#                      scaled_shear_impedance, scaled_shear_modulus,
-#                       scaled_Vp_Vs, scaled_Youngs_Modulus
-                     ],
-                    batch_size = 8, epochs = 25,
-                    verbose = 1, shuffle = True,  validation_split = 0.2)
+                      [scaled_acousticimpedance,
+                       scaled_bulk_modulus,
+                       scaled_density,
+                       scaled_permeability,
+                       scaled_poissonratio,
+                       scaled_porosity,
+                       # scaled_shear_impedance, scaled_shear_modulus,
+                       # scaled_Vp_Vs, scaled_Youngs_Modulus
+                       ],
+                      batch_size=8, epochs=25,
+                      verbose=1, shuffle=True, validation_split=0.2)
 
 pd.DataFrame.from_dict(history5.history).to_csv(current_dir + r"/dataset_models/history_model_masked.csv", index=False)
 
 # saving model
 model5.save(current_dir + r"/dataset_models/model_masked")
-
-# # #loading model
-model5 = tf.keras.models.load_model(current_dir + r"/dataset_models/model_masked",
-                                    custom_objects={"regularized_loss": regularized_loss,
-                                                    "r_squared": r_squared,
-                                                    "adjusted_r_squared": adjusted_r_squared})
-
-history = pd.read_csv(current_dir + r"/dataset_models/history_model_masked.csv")
-
-plt.rcParams.update({'font.size': 6})
-history[['acoustic_impedance_adjusted_r_squared',
-         'bulk_modulus_adjusted_r_squared', 'density_adjusted_r_squared',
-         'permeability_adjusted_r_squared', 'poisson_ratio_adjusted_r_squared',
-         'porosity_adjusted_r_squared']].plot(xlabel='Epoch',
-                                              ylabel='Adjusted r-squared',
-                                              title='Adjusted r_squared vs epoch')
-
-# # Prediction
-
-img = seismic_dataset[6]
-img = (img - np.mean(resized_seismic)) / np.std(resized_seismic)
-acous = acoustic_impedance_dataset[6]
-acous[acous == 0] = np.nan
-# acous = (acous - np.mean(resized_acoustic_impedance))/np.std(resized_acoustic_impedance)
-
-# acous = acoustic_impedance_dataset[6]
-# acous[acous == 0] = np.nan
-# acous = (acous - np.mean(resized_acoustic_impedance))/np.std(resized_acoustic_impedance)
-
-bm = bulk_modulus_dataset[6]
-bm[bm == 0] = np.nan
-# bm = (bm - np.mean(resized_bulk_modulus))/np.std(resized_bulk_modulus)
-
-density = density_dataset[6]
-density[density == 0] = np.nan
-# density = (density - np.mean(resized_density))/np.std(resized_density)
-
-porosity = porosity_dataset[6]
-porosity[porosity == 0] = np.nan
-# porosity = (porosity - np.mean(resized_porosity))/np.std(resized_porosity)
-
-permeability = permeability_dataset[6]
-permeability[permeability == 0] = np.nan
-# permeability = (permeability - np.mean(resized_permeability))/np.std(resized_permeability)
-
-poisson_ratio = poissonratio_dataset[6]
-poisson_ratio[poisson_ratio == 0] = np.nan
-# poisson_ratio = (poisson_ratio - np.mean(resized_poissonratio))/np.std(resized_poissonratio)
-
-
-emp = EMPatches()
-img_patches, indices = emp.extract_patches(img, patchsize=256, overlap=0.1)
-img_patches = np.concatenate(img_patches)
-img_patches = tf.reshape(img_patches, [int(img_patches.shape[0] / 256), 256, 256])
-img_patches = tf.expand_dims(img_patches, -1)
-# img_patches.shape
-
-prediction5 = model5.predict(img_patches)
