@@ -124,7 +124,8 @@ acoustic_impedance_result = (emp.merge_patches(prediction[0], indices, mode='max
 bulk_modulus_result = (emp.merge_patches(prediction[1], indices, mode='max')*config['bulk_modulus'][1])+config['bulk_modulus'][0]
 density_result = (emp.merge_patches(prediction[2], indices, mode='max')*config['density'][1])+config['density'][0]
 permeability_result = (emp.merge_patches(prediction[3], indices, mode='max')*config['permeability'][1])+config['permeability'][0]
-porosity_result = (emp.merge_patches(prediction[4], indices, mode='max')*config['porosity'][1])+config['porosity'][0]
+poissonratio = (emp.merge_patches(prediction[4], indices, mode='max')*config['poissonratio'][1])+config['poissonratio'][0]
+porosity_result = (emp.merge_patches(prediction[5], indices, mode='max')*config['porosity'][1])+config['porosity'][0]
 
 
 spec = segyio.spec()
