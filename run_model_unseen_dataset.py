@@ -17,6 +17,7 @@ from keras import regularizers
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
 from keras.models import Model
 import json
+from shutil import copyfile
 
 
 # what is the current directory?
@@ -25,9 +26,11 @@ current_dir = os.getcwd()
 # importing input training dataset without AGC
 pathlist = Path(current_dir).glob('**/*_full.sgy')
 all_dataset_seismic = []
+segypath = []   # saving the path for the data for later on to create a new segy with rock properties
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
     path_in_str = str(path)
+    segypath.append(path_in_str)
     # print(path_in_str)
     with segyio.open(path_in_str, 'r', ignore_geometry=True) as segyfile:
         data = segyfile.trace.raw[:]
@@ -100,7 +103,7 @@ def normalized_r_squared(y_true, y_pred):
     r2 = r_squared(y_true, y_pred)
     return (1 + r2) / 2
 
-model = tf.keras.models.load_model(current_dir + r"/dataset_models/model_masked",
+model = tf.keras.models.load_model(current_dir + r"/model/model_masked",
                                    custom_objects = {"regularized_loss_masked" : regularized_loss_masked,
                                                      "r_squared":r_squared,
                                                      "adjusted_r_squared":adjusted_r_squared})
@@ -120,20 +123,48 @@ img_patches.shape
 
 prediction = model.predict(img_patches)
 
-acoustic_impedance_result = (emp.merge_patches(prediction[0], indices, mode='max')*config['acoustic_impedance'][1])+config['acoustic_impedance'][0]
+acoustic_impedance_result = (emp.merge_patches(prediction[0], indices, mode='avg')*config['acoustic_impedance'][1])+config['acoustic_impedance'][0]
 bulk_modulus_result = (emp.merge_patches(prediction[1], indices, mode='max')*config['bulk_modulus'][1])+config['bulk_modulus'][0]
 density_result = (emp.merge_patches(prediction[2], indices, mode='max')*config['density'][1])+config['density'][0]
 permeability_result = (emp.merge_patches(prediction[3], indices, mode='max')*config['permeability'][1])+config['permeability'][0]
 poissonratio = (emp.merge_patches(prediction[4], indices, mode='max')*config['poissonratio'][1])+config['poissonratio'][0]
 porosity_result = (emp.merge_patches(prediction[5], indices, mode='max')*config['porosity'][1])+config['porosity'][0]
 
+input_file = segypath[2]   # path of the unseen seismic line
 
-spec = segyio.spec()
-spec.ilines  = [0]
-spec.xlines  = [0]
-spec.samples = [0]
-spec.sorting = 2
-spec.format  = 1
+# for acoustic impedance
+output_file = current_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = acoustic_impedance_result    # saving the result for acoustic impedance
 
-with segyio.create('L2EBN2020ASCAN025_acoustic_impedance', spec) as f:
-    f.trace = acoustic_impedance_result
+# for bulk modulus
+output_file = current_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = bulk_modulus_result    # saving the result for bulk density
+
+# for bulk modulus
+output_file = current_dir + r'/L2EBN2020ASCAN025_density.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = density_result    # saving the result for density
+
+# for bulk modulus
+output_file = current_dir + r'/L2EBN2020ASCAN025_permeability.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = permeability_result    # saving the result for permeability
+
+# for bulk modulus
+output_file = current_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = poissonratio    # saving the result for poisson ratio
+
+# for bulk modulus
+output_file = current_dir + r'/L2EBN2020ASCAN025_porosity.sgy'   # path and name of the new output file you want to create
+copyfile(input_file, output_file)
+with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+    dst.trace = porosity_result    # saving the result for porosity
+

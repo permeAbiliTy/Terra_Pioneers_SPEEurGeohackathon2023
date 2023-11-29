@@ -762,7 +762,7 @@ history = model.fit(scaled_seismic,
                     batch_size=8, epochs=25,
                     verbose=1, shuffle=True, validation_split=0.2)
 
-pd.DataFrame.from_dict(history.history).to_csv(current_dir + r"/dataset_models/history_model_masked.csv", index=False)
+pd.DataFrame.from_dict(history.history).to_csv(current_dir + r"/model/history_model_masked.csv", index=False)
 
 # saving model
-model.save(current_dir + r"/dataset_models/model_masked")
+model.save(current_dir + r"/model/model_masked")
