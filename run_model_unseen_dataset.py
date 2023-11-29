@@ -1,24 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 
 import numpy as np
 # import pandas as pd
 import segyio  # to read seismic
-# import random
 import tensorflow as tf
 from empatches import EMPatches
 from keras import backend as K
-# from keras.optimizers import Adam
 from keras import regularizers
-# from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
-# from keras.models import Model
 import json
-
-# from shutil import copyfile
 
 # input directory where datafiles are stored
 input_dir = 'C:\GeoHackaton2023'
@@ -49,12 +42,7 @@ l2_regularizer = regularizers.l2(0.01)
 
 
 def regularized_loss_masked(y_true, y_pred):
-    # Calculate the Mean Squared Error
-    #    y_true = tf.cast(y_true, tf.float32)
-    #    y_pred = tf.cast(y_pred, tf.float32)
-    #
-    #    MSE = tf.keras.losses.MeanSquaredError()
-    #    mse= MSE(y_true, y_pred)
+    # Calculate the Mean Squared Error, masking zero values in ground truth
     loss = K.mean(K.square(y_pred * K.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
 
     # Add the L2 regularization
@@ -107,18 +95,21 @@ def normalized_r_squared(y_true, y_pred):
     r2 = r_squared(y_true, y_pred)
     return (1 + r2) / 2
 
-
+# Load model
 model = tf.keras.models.load_model(output_dir + r"/model/model_masked",
                                    custom_objects={"regularized_loss_masked": regularized_loss_masked,
                                                    "r_squared": r_squared,
                                                    "adjusted_r_squared": adjusted_r_squared})
 
+# Open config file
 with open('config.json', 'r') as f:
     config = json.load(f)
 
+# Rescale unseen dataset
 img = unseen_seismic_dataset.T
 img = (img - config['seismic'][0]) / config['seismic'][1]
 
+# Patch unseen dataset
 emp = EMPatches()
 img_patches, indices = emp.extract_patches(img, patchsize=256, overlap=0.1)
 img_patches = np.concatenate(img_patches)
@@ -126,8 +117,10 @@ img_patches = tf.reshape(img_patches, [int(img_patches.shape[0] / 256), 256, 256
 img_patches = tf.expand_dims(img_patches, -1)
 # img_patches.shape
 
+# Predict the outputs on the unseen dataset
 prediction = model.predict(img_patches)
 
+# Scale outputs back to original values
 acoustic_impedance_result = ((emp.merge_patches(prediction[0], indices, mode='avg') * config['acoustic_impedance'][1])
                              + config['acoustic_impedance'][0])
 bulk_modulus_result = ((emp.merge_patches(prediction[1], indices, mode='max') * config['bulk_modulus'][1])
@@ -142,26 +135,26 @@ porosity_result = ((emp.merge_patches(prediction[5], indices, mode='max') * conf
 
 input_file = segypath[2]  # path of the unseen seismic line
 
-# for acoustic impedance
+# save acoustic impedance as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(acoustic_impedance_result.T))
 
-# for bulk modulus
+# save bulk modulus as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(bulk_modulus_result.T))
 
-# for density
+# save density as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(density_result.T))
 
-# for permeability
+# save permeability as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_permeability.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(permeability_result.T))
 
-# for poissonratio
+# save poissonratio as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(poissonratio_result.T))
 
-# for bulk modulus
+# save bulk modulus as segy
 output_file = output_dir + r'/L2EBN2020ASCAN025_porosity.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(porosity_result.T))

@@ -553,24 +553,8 @@ scaled_porosity = np.float32(resized_porosity - config["porosity"][0]) / config[
 l2_regularizer = regularizers.l2(0.01)
 
 
-def regularized_loss(y_true, y_pred):
-    # Calculate the Mean Squared Error
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
-
-    MSE = tf.keras.losses.MeanSquaredError()
-    mse = MSE(y_true, y_pred)
-
-    # Add the L2 regularization
-    for layer in model.layers:
-        if hasattr(layer, 'kernel'):
-            mse += l2_regularizer(layer.kernel)
-
-    return mse
-
-
 def regularized_loss_masked(y_true, y_pred):
-    # Calculate the Mean Squared Error
+    # Calculate the Mean Squared Error, masking zero values in ground truth
     loss = k.mean(k.square(y_pred * k.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
 
     # Add the L2 regularization
@@ -725,21 +709,12 @@ def unet():
 
 num_channels = 1  # Set the number of input channels (RGB images have 3 channels)
 
-# model2 = unet(input_shape, num_channels)
 model = unet()
 model.compile(optimizer=Adam(learning_rate=1e-3), loss=regularized_loss_masked,
               metrics=['MAE', r_squared, adjusted_r_squared])
 model.summary()
 
-# Saving our predictions in the directory 'preds'
-# plt.plot(history5.history['loss'][1:])
-# plt.plot(history5.history['val_loss'][1:])
-# plt.title('Model loss')
-# plt.ylabel('loss')
-# plt.xlabel('Epoch')
-# plt.legend(['Train', 'Test'], loc='upper left')
-# plt.show()
-
+# Train model
 history = model.fit(scaled_seismic,
                     [scaled_acousticimpedance,
                      scaled_bulk_modulus,
@@ -753,6 +728,7 @@ history = model.fit(scaled_seismic,
                     batch_size=8, epochs=25,
                     verbose=1, shuffle=True, validation_split=0.2)
 
+# Save metrics
 pd.DataFrame.from_dict(history.history).to_csv(output_dir + r"/model/history_model_masked.csv", index=False)
 
 # saving model
