@@ -15,7 +15,6 @@ import json
 # input directory where datafiles are stored
 input_dir = r"C:\GeoHackaton2023"
 
-
 # By default, output results to current directory
 output_dir = os.getcwd()
 
@@ -53,10 +52,11 @@ unseen_seismic_dataset_far = all_dataset_seismic_final_far[2]  # keeping blind d
 unseen_seismic_dataset_mid = all_dataset_seismic_final_mid[2]  # keeping blind dataset
 unseen_seismic_dataset_near = all_dataset_seismic_final_near[2]  # keeping blind dataset 
 
-seismic_dataset = []
-seismic_dataset.append(np.concatenate([unseen_seismic_dataset_near[..., np.newaxis],
-                                       unseen_seismic_dataset_mid[..., np.newaxis],
-                                       unseen_seismic_dataset_far[..., np.newaxis]], axis=2))
+seismic_dataset = np.concatenate([unseen_seismic_dataset_near[..., np.newaxis],
+                                  unseen_seismic_dataset_mid[..., np.newaxis],
+                                  unseen_seismic_dataset_far[..., np.newaxis]], axis=2)
+
+print(np.shape(seismic_dataset))
 
 # del all_dataset_seismic  # free up memory space
 del all_dataset_seismic_final_near  # free up memory
@@ -128,14 +128,17 @@ with open('config.json', 'r') as f:
     config = json.load(f)
 
     # unseeen image #
-img = seismic_dataset[0].T
+img = np.transpose(seismic_dataset, (1, 0, 2))
 img = (img - config['seismic'][0]) / config['seismic'][1]
+
+print(np.shape(img))
 
 # patch the image
 emp = EMPatches()
 img_patches, indices = emp.extract_patches(img, patchsize=256, overlap=0.1)
 img_patches = np.concatenate(img_patches)
-img_patches = tf.reshape(img_patches, [int(img_patches.shape[0] / 256), 256, 256])
+print(img_patches.shape[0])
+img_patches = tf.reshape(img_patches, [int(img_patches.shape[0] / 256), 256, 256, 3])
 img_patches = tf.expand_dims(img_patches, -1)
 # img_patches.shape
 
