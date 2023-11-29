@@ -90,8 +90,8 @@ def r_squared(y_true, y_pred):  # Define a custom R-squared metric
     return 1 - ss_res / (ss_tot + tf.keras.backend.epsilon())
 
 
-# Load model
-model = tf.keras.models.load_model(output_dir + r"/model/model_masked",
+# Load model_old
+model = tf.keras.models.load_model(output_dir + r"/model_old",
                                    custom_objects={"regularized_loss_masked": regularized_loss_masked,
                                                    "r_squared": r_squared,
                                                    "adjusted_r_squared": adjusted_r_squared})

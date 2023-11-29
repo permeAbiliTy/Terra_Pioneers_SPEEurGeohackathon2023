@@ -690,7 +690,7 @@ model.compile(optimizer=Adam(learning_rate=1e-3), loss=regularized_loss_masked,
               metrics=['MAE', r_squared, adjusted_r_squared])
 model.summary()
 
-# Train model
+# Train model_old
 history = model.fit(scaled_seismic,
                     [scaled_acousticimpedance,
                      scaled_bulk_modulus,
@@ -705,7 +705,7 @@ history = model.fit(scaled_seismic,
                     verbose=1, shuffle=True, validation_split=0.2)
 
 # Save metrics
-pd.DataFrame.from_dict(history.history).to_csv(output_dir + r"/model/history_model_masked.csv", index=False)
+pd.DataFrame.from_dict(history.history).to_csv(output_dir + r"/model_old/history_model_masked.csv", index=False)
 
-# saving model
-model.save(output_dir + r"/model/model_masked")
+# saving model_old
+model.save(output_dir + r"/model_old")
