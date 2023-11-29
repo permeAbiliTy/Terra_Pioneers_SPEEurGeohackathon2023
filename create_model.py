@@ -23,11 +23,14 @@ import json
 # colourmap
 # from seiscm import seismic
 
-# what is the current directory?
-current_dir = os.getcwd()
+# input directory where datafiles are stored
+input_dir = 'C:\GeoHackaton2023'
+
+# By default, output results to current directory
+output_dir = os.getcwd()
 
 # importing input training dataset without AGC
-pathlist = Path(current_dir).glob('**/*_full.sgy')
+pathlist = Path(input_dir).glob('**/*_full.sgy')
 all_dataset_seismic = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -74,7 +77,7 @@ def parse_trace_headers(segyfile, n_traces):
     return df
 
 
-pathlist = Path(current_dir).glob('**/*_AcousticImpedance.sgy')
+pathlist = Path(input_dir).glob('**/*_AcousticImpedance.sgy')
 acoustic_impedance_dataset = []
 # coordinates = {'line':[], 'X_coord':[], 'Y_coord':[]}
 for path in pathlist:  # iterating through the list of seismic data
@@ -105,7 +108,7 @@ for dataset in acoustic_impedance_dataset:
 
 # # Importing Bulk Modulus
 
-pathlist = Path(current_dir).glob('**/*_BulkModulus.sgy')
+pathlist = Path(input_dir).glob('**/*_BulkModulus.sgy')
 bulk_modulus_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -124,7 +127,7 @@ bulk_modulus_dataset[5] = bulk_modulus_dataset[5].T
 bulk_modulus_dataset[6] = bulk_modulus_dataset[6].T
 
 # # Importing Density
-pathlist = Path(current_dir).glob('**/*_Density.sgy')
+pathlist = Path(input_dir).glob('**/*_Density.sgy')
 density_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -143,7 +146,7 @@ density_dataset[5] = density_dataset[5].T
 density_dataset[6] = density_dataset[6].T
 
 # # Importing Facies
-pathlist = Path(current_dir).glob('**/*_Facies.sgy')
+pathlist = Path(input_dir).glob('**/*_Facies.sgy')
 facies_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -162,7 +165,7 @@ facies_dataset[5] = facies_dataset[5].T
 facies_dataset[6] = facies_dataset[6].T
 
 # # Importing Permeability
-pathlist = Path(current_dir).glob('**/*_Permeability.sgy')
+pathlist = Path(input_dir).glob('**/*_Permeability.sgy')
 permeability_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -181,7 +184,7 @@ permeability_dataset[5] = permeability_dataset[5].T
 permeability_dataset[6] = permeability_dataset[6].T
 
 # # Importing Poisson Ratio
-pathlist = Path(current_dir).glob('**/*_PoissonsRatio.sgy')
+pathlist = Path(input_dir).glob('**/*_PoissonsRatio.sgy')
 poissonratio_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -200,7 +203,7 @@ poissonratio_dataset[5] = poissonratio_dataset[5].T
 poissonratio_dataset[6] = poissonratio_dataset[6].T
 
 # # Importing Porosity
-pathlist = Path(current_dir).glob('**/*_Porosity.sgy')
+pathlist = Path(input_dir).glob('**/*_Porosity.sgy')
 porosity_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -219,7 +222,7 @@ porosity_dataset[5] = porosity_dataset[5].T
 porosity_dataset[6] = porosity_dataset[6].T
 
 # # Importing Shear Impedance
-pathlist = Path(current_dir).glob('**/*_ShearImpedance.sgy')
+pathlist = Path(input_dir).glob('**/*_ShearImpedance.sgy')
 shear_impedance_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -238,7 +241,7 @@ shear_impedance_dataset[5] = shear_impedance_dataset[5].T
 shear_impedance_dataset[6] = shear_impedance_dataset[6].T
 
 # # Importing Shear Modulus
-pathlist = Path(current_dir).glob('**/*_ShearModulus.sgy')
+pathlist = Path(input_dir).glob('**/*_ShearModulus.sgy')
 shear_modulus_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -257,7 +260,7 @@ shear_modulus_dataset[5] = shear_modulus_dataset[5].T
 shear_modulus_dataset[6] = shear_modulus_dataset[6].T
 
 # # Importing VpVs
-pathlist = Path(current_dir).glob('**/*_VpVs.sgy')
+pathlist = Path(input_dir).glob('**/*_VpVs.sgy')
 Vp_Vs_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -276,7 +279,7 @@ Vp_Vs_dataset[5] = Vp_Vs_dataset[5].T
 Vp_Vs_dataset[6] = Vp_Vs_dataset[6].T
 
 # # Importing Young Modulus
-pathlist = Path(current_dir).glob('**/*_YoungsModulus.sgy')
+pathlist = Path(input_dir).glob('**/*_YoungsModulus.sgy')
 YoungsModulus_dataset = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
@@ -762,7 +765,7 @@ history = model.fit(scaled_seismic,
                     batch_size=8, epochs=25,
                     verbose=1, shuffle=True, validation_split=0.2)
 
-pd.DataFrame.from_dict(history.history).to_csv(current_dir + r"/model/history_model_masked.csv", index=False)
+pd.DataFrame.from_dict(history.history).to_csv(output_dir + r"/model/history_model_masked.csv", index=False)
 
 # saving model
-model.save(current_dir + r"/model/model_masked")
+model.save(output_dir + r"/model/model_masked")

@@ -20,12 +20,14 @@ import json
 
 # from shutil import copyfile
 
+# input directory where datafiles are stored
+input_dir = 'C:\GeoHackaton2023'
 
-# what is the current directory?
-current_dir = os.getcwd()
+# By default, output results to current directory
+output_dir = os.getcwd()
 
 # importing input training dataset without AGC
-pathlist = Path(current_dir).glob('**/*_full.sgy')
+pathlist = Path(input_dir).glob('**/*_full.sgy')
 all_dataset_seismic = []
 segypath = []  # saving the path for the data for later on to create a new segy with rock properties
 for path in pathlist:  # iterating through the list of seismic data
@@ -106,7 +108,7 @@ def normalized_r_squared(y_true, y_pred):
     return (1 + r2) / 2
 
 
-model = tf.keras.models.load_model(current_dir + r"/model/model_masked",
+model = tf.keras.models.load_model(output_dir + r"/model/model_masked",
                                    custom_objects={"regularized_loss_masked": regularized_loss_masked,
                                                    "r_squared": r_squared,
                                                    "adjusted_r_squared": adjusted_r_squared})
@@ -141,25 +143,25 @@ porosity_result = ((emp.merge_patches(prediction[5], indices, mode='max') * conf
 input_file = segypath[2]  # path of the unseen seismic line
 
 # for acoustic impedance
-output_file = current_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(acoustic_impedance_result.T))
 
 # for bulk modulus
-output_file = current_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(bulk_modulus_result.T))
 
 # for density
-output_file = current_dir + r'/L2EBN2020ASCAN025_density.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(density_result.T))
 
 # for permeability
-output_file = current_dir + r'/L2EBN2020ASCAN025_permeability.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_permeability.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(permeability_result.T))
 
 # for poissonratio
-output_file = current_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(poissonratio_result.T))
 
 # for bulk modulus
-output_file = current_dir + r'/L2EBN2020ASCAN025_porosity.sgy'
+output_file = output_dir + r'/L2EBN2020ASCAN025_porosity.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(porosity_result.T))
