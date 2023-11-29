@@ -18,7 +18,7 @@ from keras.models import Model
 import json
 
 # input directory where datafiles are stored
-input_dir = 'C:\GeoHackaton2023'
+input_dir = r'C:\GeoHackaton2023'
 
 # By default, output results to current directory
 output_dir = os.getcwd()

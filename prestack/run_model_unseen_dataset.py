@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# Import the required libraries
 import os
 from pathlib import Path
-
 import numpy as np
-# import pandas as pd
 import segyio  # to read seismic
 import tensorflow as tf
 from empatches import EMPatches
@@ -14,35 +13,63 @@ from keras import regularizers
 import json
 
 # input directory where datafiles are stored
-input_dir = 'C:\GeoHackaton2023'
+input_dir = r"C:\GeoHackaton2023"
+
 
 # By default, output results to current directory
 output_dir = os.getcwd()
 
+# far offset #
 # importing input training dataset without AGC
-pathlist = Path(input_dir).glob('**/*_full.sgy')
-all_dataset_seismic = []
-segypath = []  # saving the path for the data for later on to create a new segy with rock properties
+pathlist = Path(input_dir).glob('**/*_PreSTM_final_far.sgy')  # iterate through the folder
+all_dataset_seismic_final_far = []
 for path in pathlist:  # iterating through the list of seismic data
     # because path is object not string
     path_in_str = str(path)
-    segypath.append(path_in_str)
+    with segyio.open(path_in_str, 'r', ignore_geometry=True) as segyfile:
+        data = segyfile.trace.raw[:]
+        all_dataset_seismic_final_far.append(data)
+# mid offset #
+pathlist = Path(input_dir).glob('**/*_PreSTM_final_mid.sgy')
+all_dataset_seismic_final_mid = []
+for path in pathlist:  # iterating through the list of seismic data
+    # because path is object not string
+    path_in_str = str(path)
+    with segyio.open(path_in_str, 'r', ignore_geometry=True) as segyfile:
+        data = segyfile.trace.raw[:]
+        all_dataset_seismic_final_mid.append(data)
+# near offset #
+pathlist = Path(input_dir).glob('**/*_PreSTM_final_near.sgy')
+all_dataset_seismic_final_near = []
+for path in pathlist:  # iterating through the list of seismic data
+    # because path is object not string
+    path_in_str = str(path)
     # print(path_in_str)
     with segyio.open(path_in_str, 'r', ignore_geometry=True) as segyfile:
         data = segyfile.trace.raw[:]
-        all_dataset_seismic.append(data)
+        all_dataset_seismic_final_near.append(data)
 
-# seismic_dataset = [all_dataset_seismic[i] for i in [0, 1, 3, 4, 5, 6, 7]]
-unseen_seismic_dataset = all_dataset_seismic[2]
+unseen_seismic_dataset_far = all_dataset_seismic_final_far[2]  # keeping blind dataset
+unseen_seismic_dataset_mid = all_dataset_seismic_final_mid[2]  # keeping blind dataset
+unseen_seismic_dataset_near = all_dataset_seismic_final_near[2]  # keeping blind dataset 
 
-del all_dataset_seismic
+seismic_dataset = []
+seismic_dataset.append(np.concatenate([unseen_seismic_dataset_near[..., np.newaxis],
+                                       unseen_seismic_dataset_mid[..., np.newaxis],
+                                       unseen_seismic_dataset_far[..., np.newaxis]], axis=2))
+
+# del all_dataset_seismic  # free up memory space
+del all_dataset_seismic_final_near  # free up memory
+del all_dataset_seismic_final_mid
+del all_dataset_seismic_final_far
 
 # Create an L2 regularizer
 l2_regularizer = regularizers.l2(0.01)
 
 
+# CUSTOM LOSS AND METRICS FUNCTIONS #3
 def regularized_loss_masked(y_true, y_pred):
-    # Calculate the Mean Squared Error, masking zero values in ground truth
+    # Calculate the Mean Squared Error
     loss = K.mean(K.square(y_pred * K.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
 
     # Add the L2 regularization
@@ -90,21 +117,21 @@ def r_squared(y_true, y_pred):  # Define a custom R-squared metric
     return 1 - ss_res / (ss_tot + tf.keras.backend.epsilon())
 
 
-# Load model_old
-model = tf.keras.models.load_model(output_dir + r"/model_old",
+# LOADING THE DATASET #
+model = tf.keras.models.load_model(output_dir + r"/model",
                                    custom_objects={"regularized_loss_masked": regularized_loss_masked,
                                                    "r_squared": r_squared,
                                                    "adjusted_r_squared": adjusted_r_squared})
 
-# Open config file
+# Opening the saved normalization files
 with open('config.json', 'r') as f:
     config = json.load(f)
 
-# Rescale unseen dataset
-img = unseen_seismic_dataset.T
+    # unseeen image #
+img = seismic_dataset[0].T
 img = (img - config['seismic'][0]) / config['seismic'][1]
 
-# Patch unseen dataset
+# patch the image
 emp = EMPatches()
 img_patches, indices = emp.extract_patches(img, patchsize=256, overlap=0.1)
 img_patches = np.concatenate(img_patches)
@@ -112,10 +139,11 @@ img_patches = tf.reshape(img_patches, [int(img_patches.shape[0] / 256), 256, 256
 img_patches = tf.expand_dims(img_patches, -1)
 # img_patches.shape
 
-# Predict the outputs on the unseen dataset
+
+# predict on image
 prediction = model.predict(img_patches)
 
-# Scale outputs back to original values
+# merge patches back together
 acoustic_impedance_result = ((emp.merge_patches(prediction[0], indices, mode='avg') * config['acoustic_impedance'][1])
                              + config['acoustic_impedance'][0])
 bulk_modulus_result = ((emp.merge_patches(prediction[1], indices, mode='max') * config['bulk_modulus'][1])
@@ -127,29 +155,51 @@ poissonratio_result = ((emp.merge_patches(prediction[4], indices, mode='max') * 
                        + config['poissonratio'][0])
 porosity_result = ((emp.merge_patches(prediction[5], indices, mode='max') * config['porosity'][1])
                    + config['porosity'][0])
+shear_impedance_result = ((emp.merge_patches(prediction[6], indices, mode='max') * config['shear_impedance'][1])
+                          + config['shear_impedance'][0])
+shear_modulus_result = ((emp.merge_patches(prediction[7], indices, mode='max') * config['shear_modulus'][1])
+                        + config['shear_modulus'][0])
+VpVs_result = ((emp.merge_patches(prediction[8], indices, mode='max') * config['Vp_Vs'][1])
+               + config['Vp_Vs'][0])
+YoungsModulus_result = ((emp.merge_patches(prediction[9], indices, mode='max') * config['Youngs_Modulus'][1])
+                        + config['Youngs_Modulus'][0])
 
-input_file = segypath[2]  # path of the unseen seismic line
-
-# save acoustic impedance as segy
+# for acoustic impedance
 output_file = output_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(acoustic_impedance_result.T))
 
-# save bulk modulus as segy
+# for bulk modulus
 output_file = output_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(bulk_modulus_result.T))
 
-# save density as segy
+# for density
 output_file = output_dir + r'/L2EBN2020ASCAN025_density.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(density_result.T))
 
-# save permeability as segy
+# for permeability
 output_file = output_dir + r'/L2EBN2020ASCAN025_permeability.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(permeability_result.T))
 
-# save poissonratio as segy
+# for poissonratio
 output_file = output_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(poissonratio_result.T))
 
-# save bulk modulus as segy
+# for porosity
 output_file = output_dir + r'/L2EBN2020ASCAN025_porosity.sgy'
 segyio.tools.from_array2D(output_file, np.squeeze(porosity_result.T))
+
+# for shear impedance
+output_file = output_dir + r'/L2EBN2020ASCAN025_shear_impedance.sgy'
+segyio.tools.from_array2D(output_file, np.squeeze(shear_impedance_result.T))
+
+# for shear mmodulus
+output_file = output_dir + r'/L2EBN2020ASCAN025_shear_modulus.sgy'
+segyio.tools.from_array2D(output_file, np.squeeze(shear_modulus_result.T))
+
+# for VpVs
+output_file = output_dir + r'/L2EBN2020ASCAN025_VpVs.sgy'
+segyio.tools.from_array2D(output_file, np.squeeze(VpVs_result.T))
+
+# for Youngs Modulus
+output_file = output_dir + r'/L2EBN2020ASCAN025_Youngs_Modulus.sgy'
+segyio.tools.from_array2D(output_file, np.squeeze(YoungsModulus_result.T))
