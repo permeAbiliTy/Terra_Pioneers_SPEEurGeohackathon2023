@@ -90,11 +90,6 @@ def r_squared(y_true, y_pred):  # Define a custom R-squared metric
     return 1 - ss_res / (ss_tot + tf.keras.backend.epsilon())
 
 
-# Normalize R-squared to have a range from 0 to 1
-def normalized_r_squared(y_true, y_pred):
-    r2 = r_squared(y_true, y_pred)
-    return (1 + r2) / 2
-
 # Load model
 model = tf.keras.models.load_model(output_dir + r"/model/model_masked",
                                    custom_objects={"regularized_loss_masked": regularized_loss_masked,

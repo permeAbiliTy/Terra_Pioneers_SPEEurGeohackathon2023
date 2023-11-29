@@ -55,22 +55,6 @@ seismic_dataset[6] = seismic_dataset[6].T[500:1101, 4400:7276]
 # Importing Acoustic Inversion dataset
 
 
-def parse_trace_headers(segyfile, n_traces):
-    # https://www.kaggle.com/code/alaahassan/seg-y-headers-and-seismic-inversion
-    """Parse the segy file trace headers into a pandas dataframe.
-    Column names are defined from segyio internal tracefield
-    One row per trace"""
-    # Get all header keys
-    headers = segyio.tracefield.keys
-    # Initialize dataframe with trace id as index and headers as columns
-    df = pd.DataFrame(index=range(1, n_traces + 1),
-                      columns=headers.keys())
-    # Fill dataframe with all header values
-    for k, v in headers.items():
-        df[k] = segyfile.attributes(v)[:]
-    return df
-
-
 pathlist = Path(input_dir).glob('**/*_AcousticImpedance.sgy')
 acoustic_impedance_dataset = []
 # coordinates = {'line':[], 'X_coord':[], 'Y_coord':[]}
@@ -575,14 +559,6 @@ def r_squared(y_true, y_pred):
     ss_res = tf.reduce_sum(tf.square(y_true - y_pred))
     ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))
     return 1 - ss_res / (ss_tot + tf.keras.backend.epsilon())
-
-
-# Normalize R-squared to have a range from 0 to 1
-
-
-def normalized_r_squared(y_true, y_pred):
-    r2 = r_squared(y_true, y_pred)
-    return (1 + r2) / 2
 
 
 def adjusted_r_squared(y_true, y_pred):
