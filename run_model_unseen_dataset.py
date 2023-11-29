@@ -134,37 +134,28 @@ input_file = segypath[2]   # path of the unseen seismic line
 
 # for acoustic impedance
 output_file = current_dir + r'/L2EBN2020ASCAN025_acoustic_impedance.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = acoustic_impedance_result    # saving the result for acoustic impedance
+segyio.tools.from_array2D(output_file, np.squeeze(acoustic_impedance_result.T))
+
+#copyfile(input_file, output_file)
+#with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
+#    dst.trace = acoustic_impedance_result.T    # saving the result for acoustic impedance
 
 # for bulk modulus
 output_file = current_dir + r'/L2EBN2020ASCAN025_bulk_density.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = bulk_modulus_result    # saving the result for bulk density
+segyio.tools.from_array2D(output_file, np.squeeze(bulk_modulus_result.T))
 
-# for bulk modulus
+# for density
 output_file = current_dir + r'/L2EBN2020ASCAN025_density.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = density_result    # saving the result for density
+segyio.tools.from_array2D(output_file, np.squeeze(density_result.T))
 
-# for bulk modulus
+# for permeability
 output_file = current_dir + r'/L2EBN2020ASCAN025_permeability.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = permeability_result    # saving the result for permeability
+segyio.tools.from_array2D(output_file, np.squeeze(permeability_result.T))
 
-# for bulk modulus
+# for poissonratio
 output_file = current_dir + r'/L2EBN2020ASCAN025_poisson_ratio.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = poissonratio    # saving the result for poisson ratio
+segyio.tools.from_array2D(output_file, np.squeeze(poissonratio_result.T))
 
 # for bulk modulus
 output_file = current_dir + r'/L2EBN2020ASCAN025_porosity.sgy'   # path and name of the new output file you want to create
-copyfile(input_file, output_file)
-with segyio.open(output_file, "r+", ignore_geometry=True) as dst:
-    dst.trace = porosity_result    # saving the result for porosity
-
+segyio.tools.from_array2D(output_file, np.squeeze(porosity_result.T))
