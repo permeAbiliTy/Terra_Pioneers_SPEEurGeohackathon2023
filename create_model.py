@@ -8,7 +8,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import segyio  # to read seismic
-# import random
 import tensorflow as tf
 from empatches import EMPatches
 from keras import backend as k
@@ -17,11 +16,6 @@ from keras import regularizers
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
 from keras.models import Model
 import json
-
-# import cv2
-
-# colourmap
-# from seiscm import seismic
 
 # input directory where datafiles are stored
 input_dir = 'C:\GeoHackaton2023'
@@ -86,12 +80,6 @@ for path in pathlist:  # iterating through the list of seismic data
     # print(path_in_str)
     with segyio.open(path_in_str, 'r') as segyfile:
         data = segyfile.trace.raw[:]
-        #         bin_headers = segyfile.bin
-        #         n_traces = segyfile.tracecount
-        #         trace_headers = parse_trace_headers(segyfile, n_traces)
-        #         coordinates['X_coord'].append(trace_headers['GroupX'])
-        # #         coordinates['Y_coord'].append(trace_headers['GroupY'])
-        #         coordinates['line'].append(path_in_str)
         acoustic_impedance_dataset.append(data)
 
 # Transpose dataset
@@ -439,7 +427,7 @@ no_background_density = np.asarray(patches_density)[indices_without_zero]  # den
 no_background_permeability = np.asarray(patches_permeability)[indices_without_zero]  # permeability
 no_background_poissonratio = np.asarray(patches_poissonratio)[indices_without_zero]  # poisson ratio
 no_background_porosity = np.asarray(patches_porosity)[indices_without_zero]  # porosity
-# # no_background_shear_impedance = np.asarray(patches_shear_impedance)[indices_without_zero]  # shear impedance
+# no_background_shear_impedance = np.asarray(patches_shear_impedance)[indices_without_zero]  # shear impedance
 # no_background_shear_modulus = np.asarray(patches_shear_modulus)[indices_without_zero]  # shear modulus
 # no_background_Vp_Vs = np.asarray(patches_Vp_Vs)[indices_without_zero]  #VpVs
 # no_background_Youngs_Modulus = np.asarray(patches_YoungsModulus)[indices_without_zero]  # Youngs Modulus
