@@ -10,7 +10,7 @@ import pandas as pd
 import segyio  # to read seismic
 import tensorflow as tf
 from empatches import EMPatches
-from keras import backend as k
+from keras import backend as K
 from keras.optimizers import Adam
 from keras import regularizers
 from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
@@ -539,7 +539,7 @@ l2_regularizer = regularizers.l2(0.01)
 
 def regularized_loss_masked(y_true, y_pred):
     # Calculate the Mean Squared Error, masking zero values in ground truth
-    loss = k.mean(k.square(y_pred * k.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
+    loss = K.mean(K.square(y_pred * K.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
 
     # Add the L2 regularization
     for layer in model.layers:
@@ -590,7 +590,7 @@ def adjusted_r_squared(y_true, y_pred):
 
 
 def loss_function_mask(y_true, y_pred):
-    loss = k.mean(k.square(y_pred * k.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
+    loss = K.mean(K.square(y_pred * K.cast(y_true > tf.reduce_min(y_true), "float32") - y_true), axis=-1)
     #     loss = K.sqrt(K.sum(K.square(y_pred*K.cast(y_true> tf.reduce_min(y_true), "float32") - y_pred))
     #               / K.sum(K.cast(y_true>0, "float32") ))
     return loss
