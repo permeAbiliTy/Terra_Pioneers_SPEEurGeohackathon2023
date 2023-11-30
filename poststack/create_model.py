@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+#    Team 'Terra Pioneers' entry to the SPE Europe Energy Geohackathon 2023 training a model
+#        to predict seismic inversion products on poststack seismic data
+#
+#    Copyright (C) 2023  Team Terra Pioneers (Adam Turner, Mariam Shreif, Julien Kuhn de Chizelle, 
+#                                                Ali Madani, and Saurav Bhattacharjee)
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # import matplotlib.pyplot as plt
 import os
 from pathlib import Path
